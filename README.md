@@ -1,240 +1,99 @@
 # Event Escapes MCP Server
 
-Compatible with Claude, ChatGPT, OpenAI Agents, and MCP-compatible AI systems.
-
-Event Escapes currently supports AI-assisted discovery workflows where users complete checkout directly on Event Escapes.
-
-> AI-accessible sports and entertainment travel infrastructure for AI agents, copilots, and autonomous trip planners.
+AI-accessible commerce for event-driven travel: sports and entertainment events, hotels near the venue, curated packages and experiences, with checkout on Event Escapes.
 
 [![MCP](https://img.shields.io/badge/Protocol-MCP-blue)](https://modelcontextprotocol.io)
-[![Status](https://img.shields.io/badge/Status-Live-brightgreen)](https://mcp.eventescapes.com)
-[![Events](https://img.shields.io/badge/Inventory-3000%2B%20Events-orange)](https://eventescapes.com/sports)
+[![Status](https://img.shields.io/badge/Status-Live-brightgreen)](https://eventescapes.com/ai)
+[![Events](https://img.shields.io/badge/Events-4000%2B-orange)](https://eventescapes.com/ai)
 
-Event Escapes is a premium sports and entertainment travel OTA based in Melbourne, Australia. This MCP server gives AI agents direct access to event tickets, hotels, curated travel packages, and local experiences worldwide.
+Event Escapes is an Australian travel technology company focused on event-driven travel. This server lets AI agents search events, hotels near a venue, packages and experiences, and create a payment link that the customer pays on the Event Escapes checkout.
 
-Built for Claude, ChatGPT, AI travel agents, and any MCP-compatible client.
+Works with Claude, ChatGPT, Claude Code, Cursor, Gemini and any MCP client.
+
+- Connection guide: https://eventescapes.com/ai
+- Technology overview: https://eventescapes.com/technology
+- Partnerships: https://eventescapes.com/technology/partners
 
 ---
 
-# MCP Endpoint
+## Endpoint
 
-```bash
+```
 https://mcp.eventescapes.com/sse
 ```
 
----
+Transport: streamable HTTP. No key is needed for search.
+Manifest: https://eventescapes.com/.well-known/mcp.json
 
-# Why Event Escapes?
+The same tools are available as a REST API (OpenAPI 3.1): https://eventescapes.com/openapi.json
 
-Event Escapes combines global event inventory with AI-accessible travel commerce infrastructure.
-
-## Features
-
-- Sports, concerts, festivals, and entertainment inventory
-- Curated ticket + hotel travel packages
-- Premium and VIP experiences
-- Multi-market pricing and currencies
-- AI-friendly structured responses
-- Payment plans available in Australia
-- Global events coverage
-- Real-time hotel and experience search
-- MCP-native architecture for AI agents
+| Method | Path | Tool |
+|---|---|---|
+| GET | `/api/v1/events` | `search_events` |
+| GET | `/api/v1/events/{idOrSlug}` | `get_event_details` |
+| GET | `/api/v1/events/{idOrSlug}/hotels` | `search_hotels_near_event` |
+| GET | `/api/v1/packages` | `search_packages` |
+| GET | `/api/v1/experiences` | `search_experiences` |
+| POST | `/api/v1/payment-links` | `create_payment_link` |
 
 ---
 
-# Supported Events
+## Tools
 
-| Category | Competitions |
+| Tool | What it does |
 |---|---|
-| Motorsport | Formula 1, MotoGP, NASCAR |
-| Football | Premier League, La Liga, Serie A, Champions League, World Cup 2026, MLS |
-| US Sports | NFL, NBA, NHL, MLB |
-| Tennis | Wimbledon, Australian Open, US Open, French Open |
-| Rugby | Six Nations, Rugby World Cup, Super Rugby |
-| Cricket | ICC Events, Test Matches |
-| Entertainment | Concerts, Festivals, WWE, Tomorrowland |
-| Other | Golf Majors, Royal Ascot, Diamond League |
+| `search_events` | Find sports and concert events by sport, competition, city, country and dates |
+| `get_event_details` | Full event information, venue and prices |
+| `search_hotels_near_event` | Hotels around an event venue for the event dates, with distance |
+| `search_packages` | Curated packages around major events |
+| `search_experiences` | Tours and activities in the event city |
+| `build_event_link` | Link to an event booking page on Event Escapes |
+| `build_package_link` | Link to a package page on Event Escapes |
+| `create_payment_link` | Lock live prices for hotel rooms and event tickets and return one secure payment link for the customer |
+
+Search and link tools are read only. Coverage (November 2026): 4,000+ sports and concert events in 60+ countries. Trade fairs and business events are on the website only.
 
 ---
 
-# Available MCP Tools
+## Two ways to book
 
-## `search_events`
+1. **A link to the booking page**: `build_event_link` (the event page, with hotels near the venue already loaded and an optional pinned hotel), `build_package_link` (a curated package page) or an experience page. The customer books on eventescapes.com.
+2. **A direct payment link**: `create_payment_link` locks live prices for hotel rooms and event tickets (up to 4 items) and returns one secure payment link.
 
-Search for events by keyword, destination, category, or date range.
+## Booking through an agent
 
-### Example Request
+`create_payment_link` starts a booking; the customer completes it.
 
-```json
-{
-  "query": "Formula 1",
-  "country": "Australia",
-  "date_from": "2026-10-01",
-  "date_to": "2026-12-31"
-}
+- The agent sends the customer's email and name, `customer_consent` (the customer's own words asking for the booking), the items and `agent_terms_accepted: true`, its acceptance of the AI Agent Terms: https://eventescapes.com/terms/ai-agents
+- Event Escapes locks live prices and returns one payment URL for the whole trip. It expires after about 30 minutes, and a new link replaces the customer's previous unpaid one.
+- Creating the link charges nothing. The customer pays on the Event Escapes checkout, and the card is only charged for the bookings that are confirmed, and anything that cannot be booked is released. Event Escapes is the merchant of record.
+- Experiences come back as a link to the experience page, where the customer books them.
+- Orders above about AUD 5,000 also need `total_confirmation` in the customer's words; above about AUD 20,000 the customer books with our team.
+- If more is needed (a ticket category, approval of a price change, attendee details), the tool returns `action_required`; call again with the same items plus those fields.
+- Every payment link is recorded with the agent, the customer's consent, the items and the total.
+
+---
+
+## Quick start
+
+**Claude.ai**: Settings, Connectors, Add custom connector, paste the endpoint.
+
+**ChatGPT**: Settings, Apps, Advanced, turn on Developer mode, Create, paste the endpoint, no auth.
+
+**Claude Code**
+
+```bash
+claude mcp add --transport http event-escapes https://mcp.eventescapes.com/sse
 ```
 
-### Example Response
-
-```json
-{
-  "event": "Formula 1 Australian Grand Prix 2026",
-  "city": "Melbourne",
-  "country": "Australia",
-  "price_from": 899,
-  "availability": "Available",
-  "event_url": "https://eventescapes.com/sports/f1"
-}
-```
-
-Returns:
-- Event name
-- Venue
-- Date
-- City
-- Country
-- Ticket availability
-- Price range
-- Event URL
-
----
-
-## `get_event_details`
-
-Get full details for a specific sporting or entertainment event.
-
-### Example
-
-```json
-{
-  "event_id": "formula-1-australian-grand-prix-melbourne-2026"
-}
-```
-
-Returns:
-- Ticket categories
-- Venue information
-- Event schedule
-- Seating information
-- Package availability
-
----
-
-## `search_hotels`
-
-Search hotels near event venues.
-
-### Example
-
-```json
-{
-  "destination": "Melbourne",
-  "check_in": "2026-11-26",
-  "check_out": "2026-11-28",
-  "guests": 2
-}
-```
-
-Returns:
-- Hotel options
-- Pricing
-- Ratings
-- Distance from venue
-- Room availability
-
----
-
-## `search_packages`
-
-Find curated travel packages combining tickets, hotels, and experiences.
-
-### Example
-
-```json
-{
-  "query": "F1 Melbourne",
-  "tier": "premium"
-}
-```
-
-Returns:
-- Curated event packages
-- Hotel inclusions
-- Ticket types
-- Experience add-ons
-- Package pricing
-
----
-
-## `search_experiences`
-
-Search tours, attractions, and local experiences in event destinations.
-
-### Example
-
-```json
-{
-  "destination": "Singapore",
-  "date": "2026-09-21"
-}
-```
-
----
-
-## `get_destinations`
-
-List all available destinations with upcoming event counts.
-
----
-
-## `get_package_details`
-
-Get full details for a specific travel package.
-
----
-
-# Example AI Prompts
-
-Use Event Escapes with Claude, ChatGPT, and MCP-compatible AI agents.
-
-- Find Formula 1 races in November 2026
-- Show me NFL games in London
-- Search for Wimbledon packages
-- Find hotels near the Melbourne Grand Prix circuit
-- What experiences are available during Singapore F1?
-- Search for World Cup 2026 packages
-- Show premium packages for the Australian Open
-- Find concerts happening in Melbourne next month
-
----
-
-# AI Agent Workflow
-
-```text
-AI Agent
-   ↓
-Event Escapes MCP Server
-   ↓
-Tickets + Hotels + Experiences
-   ↓
-Event Escapes Checkout
-```
-
-Event Escapes currently supports AI-assisted discovery and booking workflows. Users complete checkout directly on Event Escapes.
-
----
-
-# Quick Start
-
-## Claude Desktop
-
-Add to `claude_desktop_config.json`
+**Claude Desktop** (`claude_desktop_config.json`)
 
 ```json
 {
   "mcpServers": {
     "event-escapes": {
-      "url": "https://mcp.eventescapes.com/sse"
+      "command": "npx",
+      "args": ["mcp-remote", "https://mcp.eventescapes.com/sse"]
     }
   }
 }
@@ -242,96 +101,38 @@ Add to `claude_desktop_config.json`
 
 ---
 
-## Claude.ai
+## Example: one `search_events` result
 
-Search for "Event Escapes" in the Claude MCP Connectors directory.
+Illustrative values; live prices and availability change.
 
----
-
-## Any MCP Client
-
-Connect using:
-
-```bash
-https://mcp.eventescapes.com/sse
+```json
+{
+  "event_id": "58b8e350-aea2-41c7-bcc3-bfd0d3335f01",
+  "title": "Arsenal vs Manchester City",
+  "category": "sports",
+  "venue": "Emirates Stadium",
+  "city": "London",
+  "country_code": "GB",
+  "event_date": "2026-11-29",
+  "price_from": 498.33,
+  "currency": "USD",
+  "availability": "available",
+  "url": "https://eventescapes.com/events/arsenal-vs-manchester-city-london-2026-393006"
+}
 ```
 
 ---
 
-# Markets & Currencies
-
-| Market | Currency | Payment Methods |
-|---|---|---|
-| Australia | AUD | Stripe, Afterpay |
-| New Zealand | NZD | Stripe |
-| Singapore | SGD | Stripe |
-| Malaysia | MYR | Stripe |
-| United States | USD | Stripe |
-| United Kingdom | GBP | Stripe |
-
----
-
-# Architecture
-
-```text
-AI Agent (Claude / ChatGPT / Custom)
-        ↓
-MCP Protocol (SSE)
-        ↓
-Event Escapes MCP Server (Cloudflare Workers)
-        ↓
-Supabase Edge Functions
-        ├── SE365 API (tickets)
-        ├── RateHawk API (hotels)
-        ├── Hotelbeds API (experiences)
-        └── Supabase Database (packages + cache)
-```
-
----
-
-# AI Travel Infrastructure
-
-Event Escapes is building AI-accessible travel commerce infrastructure for sports and entertainment travel.
-
-The MCP server enables:
-- AI travel agents
-- Autonomous trip planners
-- Conversational travel commerce
-- AI-powered sports travel search
-- Event discovery workflows
-- Structured booking experiences
-
----
-
-# Links
+## Links
 
 - Website: https://eventescapes.com
-- MCP Server: https://mcp.eventescapes.com
-- Sports Events: https://eventescapes.com/sports
-- Music Events: https://eventescapes.com/music
-- Travel Packages: https://eventescapes.com/packages
-- LLM Index: https://eventescapes.com/llms.txt
+- Ask Jenny, our AI travel concierge: https://eventescapes.com/jenny
+- LLM index: https://eventescapes.com/llms.txt
+- AI Agent Terms: https://eventescapes.com/terms/ai-agents
+- Partnerships: partnerships@eventescapes.com
 
----
+## About
 
-# About Event Escapes
+Event Escapes is a trading name of Zeroopay Technologies Pty Ltd (ABN 78 688 499 489), Melbourne, Australia.
 
-Event Escapes (Zeroopay Technologies Pty Ltd) is a premium event travel platform based in Melbourne, Australia.
-
-We curate sports and entertainment travel experiences by combining:
-- Event tickets
-- Hotels
-- Flights
-- Experiences
-- Hospitality packages
-
-for customers worldwide.
-
----
-
-# License
-
-This MCP server is provided as a public AI-accessible API.
-
-Usage is subject to:
-https://eventescapes.com/terms-of-service
+Use of this server is subject to the Event Escapes terms (https://eventescapes.com/terms) and the AI Agent Terms (https://eventescapes.com/terms/ai-agents).
