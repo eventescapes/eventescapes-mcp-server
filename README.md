@@ -66,7 +66,7 @@ Search and link tools are read only. Coverage (November 2026): 4,000+ sports and
 
 - The agent sends the customer's email and name, `customer_consent` (the customer's own words asking for the booking), the items and `agent_terms_accepted: true`, its acceptance of the AI Agent Terms: https://eventescapes.com/terms/ai-agents
 - Event Escapes locks live prices and returns one payment URL for the whole trip. It expires after about 30 minutes, and a new link replaces the customer's previous unpaid one.
-- Creating the link charges nothing. The customer pays on the Event Escapes checkout, and the card is only charged for the bookings that are confirmed, and anything that cannot be booked is released. Event Escapes is the merchant of record.
+- Creating the link charges nothing. The customer pays on the Event Escapes checkout, and the card is only charged for the bookings that are confirmed; anything that cannot be booked is released. Event Escapes is the merchant of record.
 - Experiences come back as a link to the experience page, where the customer books them.
 - Orders above about AUD 5,000 also need `total_confirmation` in the customer's words; above about AUD 20,000 the customer books with our team.
 - If more is needed (a ticket category, approval of a price change, attendee details), the tool returns `action_required`; call again with the same items plus those fields.
